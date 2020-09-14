@@ -11,14 +11,17 @@ is_screensaver_active () {
 snooze () {
 	local MINUTES=$1
 	local DEADLINE=$(( $(date +%s) + ($MINUTES * 60) ))
-	tput cr; tput sc
+	echo
+	tput sc
 	while [[ $(date +%s) -lt $DEADLINE ]]; do
 		local DELTA=$(( $DEADLINE - $(date +%s) ))
 		clear; printf "Snoozing $(date -u -d @${DELTA} +%H:%M:%S)... (press Enter to end)"
 		read -t 1 -N 1 KBD_IN # Wait 1 second (or until user input)
-		if [[ $KBD_IN == $'\x0a' ]]; then
+		if [[ $KBD_IN == $'\x0a' ]]; then # <Enter>
 			start
 			return
+		elif [[ $KBD_IN =~ q|Q ]]; then # <q>
+			exit
 		fi
 	done
 	echo -e "\nSnooze done"
@@ -63,7 +66,7 @@ mainmenu () {
   done
 	# Run
 	flash 4 0.1 0
-	clear; echo -e -n "Stretch break.\a "
+	echo -e -n "Stretch break.\a "
 	read -n 999999 -s -t 0.01 DISCARD
 	read -n 1 -s -p "Press any key: " -t $PROMPT_TIMEOUT OPT
 	read -n 999999 -s -t 0.01 DISCARD
