@@ -1,5 +1,6 @@
 #!/bin/bash
 
+THISDIR=$(dirname "$0")
 PROMPT_TIMEOUT=30 # `read` timeout
 WAIT_TIMEOUT=240 # auto-snooze after `read` timeout
 
@@ -26,6 +27,7 @@ snooze () {
 	done
 	echo -e "\nSnooze done"
 }
+click_seconds () { SKIP_TERM_CHECK=1 bash "$THISDIR/click-seconds.sh"; }
 clear () { tput rc; tput ed; }
 reverse_video () { printf '\e[?5h'; }
 normal_video () { printf '\e[?5l'; }
@@ -73,6 +75,7 @@ mainmenu () {
 	if [[ -n $OPT ]]; then
 		case $OPT in
 			[123456789]) snooze $OPT;;
+			c) click_seconds;;
 			q) KEEP_LOOPING=0;;
 			*) start;;
 		esac

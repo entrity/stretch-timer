@@ -1,10 +1,12 @@
 #!/bin/bash
 
-ppid=`ps -h -o ppid -p $$`
-term=`ps -h -o comm -p $ppid`
-if ! [[ $term =~ ^gnome-terminal ]]; then
-	gnome-terminal -- /bin/bash "$0"
-	exit
+if !(($SKIP_TERM_CHECK)); then
+	ppid=`ps -h -o ppid -p $$`
+	term=`ps -h -o comm -p $ppid`
+	if ! [[ $term =~ ^gnome-terminal ]]; then
+		gnome-terminal -- /bin/bash "$0"
+		exit
+	fi
 fi
 
 TEN_MIN=$(( 10 * 60 ))
