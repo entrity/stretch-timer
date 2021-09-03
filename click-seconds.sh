@@ -1,42 +1,67 @@
 #!/bin/bash
 
-if !(($SKIP_TERM_CHECK)); then
-	ppid=`ps -h -o ppid -p $$`
-	term=`ps -h -o comm -p $ppid`
-	if ! [[ $term =~ ^gnome-terminal ]]; then
-		gnome-terminal -- /bin/bash "$0"
-		exit
-	fi
-fi
+# Click+flash terminal each second
 
-TEN_MIN=$(( 10 * 60 ))
-SECONDS=${1:-$TEN_MIN}
+# Usage:
+# ./$0 [seconds]
 
-reverse_video () { printf '\e[?5h'; VID=1; }
+# If the param is empty, click is indefinite; otherwise it clicks for param
+# seconds.
+
+# catch sig and go to normal
+
+get_now () { date +%s; }
+
+expiration_reached () {
+	[[ -n "$STOP_TIME" ]] && [[ $STOP_TIME -le $(get_now) ]]
+}
+
+make_click_sound () { tput bel; }
+reversed_video () { printf '\e[?5h'; VID=1; }
 normal_video () { printf '\e[?5l'; VID=; }
 
-start=`date +%s`
-
-printf "%d %2d %2d %2d\t%d\n" 5 10 20 60 delta
-tput sc
-for i in `seq $SECONDS`; do
-	read -n 1 -t 0.01 INPUT
-	if [[ $INPUT =~ q|Q ]]; then
-		break
-	fi
-	now=`date +%s`
-	delta=$(( $now - $start ))
-	mod5=$(( $delta % 5 ))
-	mod10=$(( $delta % 10 ))
-	mod20=$(( $delta % 20 ))
-	mod60=$(( $delta % 60 ))
-	tput rc
-	printf "%d %2d %2d %2d\t%d" $mod5 $mod10 $mod20 $mod60 $delta
-	tput bel
-	if [[ $VID == 1 ]]; then
+invert_video () {
+	if ((VID)); then
 		normal_video
 	else
-		reverse_video
+		reversed_video
 	fi
+}
+
+show_count () {
+	local NOW=$(get_now)
+	local DELTA=$(( NOW - START_SECONDS ))
+	tput rc
+	printf "%d" $DELTA
+}
+
+cleanup () {
+	if ((VID)); then
+		normal_video # End with normal video
+	fi
+	echo
+	exit
+}
+
+trap cleanup SIGINT
+
+START_SECONDS=$(get_now)
+QUOTA_SECONDS=$1
+if [[ -n $QUOTA_SECONDS ]]; then
+	STOP_TIME=$(( START_SECONDS + QUOTA_SECONDS ))
+else
+	STOP_TIME=
+fi
+
+tput sc
+
+# Loop
+while ((1)); do
+	if expiration_reached; then break; fi
+	show_count
+	make_click_sound
+	invert_video
 	sleep 1
 done
+
+cleanup
