@@ -4,7 +4,8 @@ One option for producing a notification in Windows
 Usage:
   powershell.exe -File $0 [-title TITLE] msg
 
-Ref. http://woshub.com/popup-notification-powershell/
+Ref:
+  http://woshub.com/popup-notification-powershell/
 #>
 
 param (

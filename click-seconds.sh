@@ -28,11 +28,20 @@ invert_video () {
 	fi
 }
 
+print_formatted_seconds () {
+	local delta
+	delta=$1
+	deadline=$2
+	sec=$(( $delta % 60 ))
+	min=$(( $delta / 60 ))
+	printf "%2d:%02d ( %d / %d )" $min $sec $delta $QUOTA_SECONDS
+}
+
 show_count () {
 	local NOW=$(get_now)
 	local DELTA=$(( NOW - START_SECONDS ))
 	tput rc
-	printf "%d" $DELTA
+	print_formatted_seconds $DELTA
 }
 
 cleanup () {
@@ -59,7 +68,7 @@ tput sc
 while ((1)); do
 	if expiration_reached; then break; fi
 	show_count
-	make_click_sound
+	[[ -n $SILENT ]] || make_click_sound
 	invert_video
 	sleep 1
 done
