@@ -28,20 +28,26 @@ invert_video () {
 	fi
 }
 
+# Print MM:SS
 print_formatted_seconds () {
-	local delta
-	delta=$1
-	deadline=$2
-	sec=$(( $delta % 60 ))
-	min=$(( $delta / 60 ))
-	printf "%2d:%02d ( %d / %d )" $min $sec $delta $QUOTA_SECONDS
+	local delta=$1
+	sec=$(( delta % 60 ))
+	min=$(( delta / 60 ))
+	printf "%2d:%02d" $min $sec
 }
 
+# Print MM:SS / MM:SS ( S / S )
+print_formatted_count () {
+	print_formatted_seconds $1
+	printf " / %s ( %d / %d )" $QUOTA_FORMATTED_SECONDS $1 $QUOTA_SECONDS
+}
+
+# Call print_formatted_count with the current time
 show_count () {
 	local NOW=$(get_now)
 	local DELTA=$(( NOW - START_SECONDS ))
 	tput rc
-	print_formatted_seconds $DELTA
+	print_formatted_count $DELTA
 }
 
 cleanup () {
@@ -49,13 +55,14 @@ cleanup () {
 		normal_video # End with normal video
 	fi
 	echo
-	exit
+	exit ${1:-0}
 }
 
 trap cleanup SIGINT
 
 START_SECONDS=$(get_now)
 QUOTA_SECONDS=$1
+QUOTA_FORMATTED_SECONDS=`print_formatted_seconds $QUOTA_SECONDS`
 if [[ -n $QUOTA_SECONDS ]]; then
 	STOP_TIME=$(( START_SECONDS + QUOTA_SECONDS ))
 else
@@ -68,9 +75,16 @@ tput sc
 while ((1)); do
 	if expiration_reached; then break; fi
 	show_count
-	[[ -n $SILENT ]] || make_click_sound
+	(($SILENT)) || make_click_sound
 	invert_video
-	sleep 1
+	# Instead of sleep for 1 sec, spend 1 sec listening for keyboard input
+	read -s -N1 -t1 KBD_INPUT
+	# Allow user to hit 'Enter' to break the loop and start stretches
+	if [[ $KBD_INPUT == $'\x0a' ]]; then
+		cleanup 101
+	elif [[ $KBD_INPUT == m ]]; then
+		SILENT=$(( 1 - ${SILENT:-0} ))
+	fi
 done
 
 cleanup
