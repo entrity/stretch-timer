@@ -12,15 +12,14 @@ function time2sec () {
   echo $(( minpart * 60 + secpart ))
 }
 
-
-# Open up Windows GUI prompt
-# @args: title, msg, default-value
-function windows_prompt () {
-  powershell.exe -File prompt.ps1 "${@}" | tr -d $'\r'
-}
-
 function prompt_for_time () {
-  windows_prompt "Pomotodoro $1" "Enter the $1 time (M:S or M)" $2
+  while true; do
+    >/dev/null powershell.exe -File windows-notification.ps1 -title "Pomoodoro" -ttl 60 "$1 TIME"
+    >/dev/null sleep 6
+  done &
+  loop_id=$!
+  powershell.exe -File prompt.ps1 "Pomoodoro $1" "Enter the $1 time (M:S or M)" $2 | tr -d $'\r'
+  kill $loop_id # After input returns
 }
 
 function iteration () {
