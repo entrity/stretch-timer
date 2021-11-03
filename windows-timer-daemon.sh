@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Detect OS
+if uname -a | grep -q Microsoft; then
+  OS=windows
+  notify () {
+    powershell.exe -File windows-notification.ps1 -title "$1" -ttl "$2" "$3"
+  }
+  prompt () {
+    powershell.exe -File prompt.ps1 "$1" "$2" "$3" | tr -d $'\r'
+  }
+elif uname | grep -q Darwin; then
+  OS=macos
+elif uname | grep -q Linux; then
+  OS=linux
+else
+  >&2 echo "ERROR: unrecognized OS"
+fi
+
 # Convert MM:SS to seconds
 function time2sec () {
   local minpart=$(<<<"$1" grep -oP "^(-)?[0-9]+" )
@@ -9,11 +26,11 @@ function time2sec () {
 
 function prompt_for_time () {
   while true; do
-    >/dev/null powershell.exe -File windows-notification.ps1 -title "Pomoodoro" -ttl 60 "$1 TIME"
+    >/dev/null notify "Pomodoro" "60" "$1 TIME"
     >/dev/null sleep 30
   done &
   loop_id=$!
-  powershell.exe -File prompt.ps1 "Pomoodoro $1" "Enter the $1 time (M:S or M)" $2 | tr -d $'\r'
+  prompt "Pomodoro $1" "Enter the $1 time (M:S or M)" "$2"
   kill $loop_id # After input returns
 }
 
@@ -23,15 +40,15 @@ function iteration () {
   # Get time string for next interval
   MODE=$(( 1 - MODE ))
   TIME_STRINGS[$MODE]=$(prompt_for_time "${LABELS[$MODE]}" ${TIME_STRINGS[$MODE]})
-  [[ -z ${TIME_STRINGS[$MODE]} ]] && exit 1
+  [[ ${TIME_STRINGS[$MODE],,} =~ q ]] && exit 1
   local secs=$(time2sec "${TIME_STRINGS[$MODE]}")
   # Repeat current mode if time is negative
-  if [[ $secs -lt 0 ]]; then
+  if [[ ${secs:-0} -lt 0 ]]; then
     MODE=$(( 1 - MODE ))
     secs=$(( secs * -1 ))
   fi
   # Set seconds for next interval
-  SECS[$MODE]=$secs
+  SECS[$MODE]=${secs:-0}
 }
 
 TIME_STRINGS=( ${1:-20} ${2:-3} )
