@@ -14,7 +14,14 @@ param (
 
 [reflection.assembly]::loadwithpartialname("System.Windows.Forms")
 [reflection.assembly]::loadwithpartialname("System.Drawing")
-$notify = new-object system.windows.forms.notifyicon
-$notify.icon = [System.Drawing.SystemIcons]::Information
-$notify.visible = $true
-$notify.showballoontip($ttl,"$title",$msg,[system.windows.forms.tooltipicon]::None)
+
+# I don't know why, but now I can't get a notification to appear unless I include this pointless line:
+new-object system.windows.forms.notifyicon
+
+$global:balmsg = New-Object System.Windows.Forms.NotifyIcon
+$balmsg.Icon = [System.Drawing.SystemIcons]::Information
+$balmsg.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::None
+$balmsg.BalloonTipText = $msg
+$balmsg.BalloonTipTitle = $title
+$balmsg.Visible = $true
+$balmsg.ShowBalloonTip($ttl)
