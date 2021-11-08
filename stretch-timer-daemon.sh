@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd "$(dirname "$BASH_SOURCE")"
+
 # Detect OS
 if uname -a | grep -q Microsoft; then
   OS=windows
