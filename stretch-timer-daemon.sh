@@ -16,11 +16,8 @@ elif uname | grep -q Darwin; then
 elif uname | grep -q Linux; then
   OS=linux
   notify () {
-    notify-send -t "$2" "$1" "$3"
-    vol=`amixer -D pulse sget Master | grep -oP '\d+%' | head -n1`
-    [[ ${vol%\%} -gt 50 ]] && amixer -D pulse sset Master 50%
-    aplay /usr/share/sounds/sound-icons/prompt.wav
-    [[ ${vol%\%} -gt 50 ]] && amixer -D pulse sset Master "$vol"
+    notify-send --hint int:transient:1 -t "$2" "$1" "$3"
+    ffplay -nodisp -autoexit -volume 20 /usr/share/sounds/sound-icons/prompt.wav
   }
   prompt () {
     zenity --entry --title="$1" --text="$2" --entry-text="$3"

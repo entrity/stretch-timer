@@ -10,6 +10,10 @@
 
 # catch sig and go to normal
 
+# Don't change the system volume in these scripts. If you want the bell
+# quieter, go to the os settings > Sound > System Sounds (which I think only
+# handles alerts/bells).
+
 get_now () { date +%s; }
 
 expiration_reached () {
