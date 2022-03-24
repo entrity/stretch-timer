@@ -17,7 +17,7 @@ elif uname | grep -q Linux; then
   OS=linux
   notify () {
     notify-send --hint int:transient:1 -t "$2" "$1" "$3"
-    ffplay -nodisp -autoexit -volume 20 /usr/share/sounds/sound-icons/prompt.wav
+    ffplay -nodisp -autoexit -volume 20 /usr/share/sounds/sound-icons/prompt.wav 2>/dev/null
   }
   prompt () {
     zenity --entry --title="$1" --text="$2" --entry-text="$3"

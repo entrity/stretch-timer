@@ -59,10 +59,15 @@ cleanup () {
 		normal_video # End with normal video
 	fi
 	echo
-	exit ${1:-0}
 }
 
-trap cleanup SIGINT
+on_sigint () {
+	cleanup
+	kill $PPID
+	kill $$
+}
+
+trap on_sigint SIGINT
 
 START_SECONDS=$(get_now)
 QUOTA_SECONDS=$1
