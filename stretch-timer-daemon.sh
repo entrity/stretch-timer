@@ -5,7 +5,7 @@ cd "$(dirname "$BASH_SOURCE")"
 # Detect OS
 if uname -a | grep -q Microsoft; then
   OS=windows
-  notify () {
+  remind () {
     powershell.exe -File windows-notification.ps1 -title "$1" -ttl "$2" "$3"
   }
   prompt () {
@@ -15,8 +15,8 @@ elif uname | grep -q Darwin; then
   OS=macos
 elif uname | grep -q Linux; then
   OS=linux
-  notify () {
-    notify-send --hint int:transient:1 -t "$2" "$1" "$3"
+  remind () {
+    wmctrl -a "$1"
     ffplay -nodisp -autoexit -volume 20 /usr/share/sounds/sound-icons/prompt.wav 2>/dev/null
   }
   prompt () {
@@ -34,12 +34,13 @@ function time2sec () {
 }
 
 function prompt_for_time () {
+  local TITLE="Pomodoro $1"
   while true; do
-    >/dev/null notify "Pomodoro" "60" "$1 TIME"
     >/dev/null sleep 30
+    >/dev/null remind "$TITLE" "60" "$1 TIME"
   done &
   loop_id=$!
-  prompt "Pomodoro $1" "Enter the $1 time (M:S or M)" "$2"
+  prompt "$TITLE" "Enter the $1 time (M:S or M)" "$2"
   kill $loop_id # After input returns
 }
 
