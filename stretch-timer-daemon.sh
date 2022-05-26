@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -uo pipefail
+
 cd "$(dirname "$BASH_SOURCE")"
 
 # Detect OS
@@ -41,33 +43,59 @@ function prompt_for_time () {
   done &
   loop_id=$!
   prompt "$TITLE" "Enter the $1 time (M:S or M)" "$2"
+  local ret=$?
   kill $loop_id # After input returns
+  return $ret
+}
+
+function wait_seconds () {
+  SILENT=$(( 1 - DO_CLICK )) \
+  NOBLINK=$(( 1 - DO_BLINK )) \
+  "$THIS_DIR/click-seconds.sh" "${1}"
 }
 
 function iteration () {
-  # Wait/click
-  SILENT=${SILENCE_DEFAULTS[$MODE]} "$THIS_DIR/click-seconds.sh" ${SECS[$MODE]}
-  # Get time string for next interval
+  # Increment
   MODE=$(( 1 - MODE ))
-  TIME_STRINGS[$MODE]=$(prompt_for_time "${LABELS[$MODE]}" ${TIME_STRINGS[$MODE]})
-  [[ ${TIME_STRINGS[$MODE],,} =~ q ]] && exit 1
-  local secs=$(time2sec "${TIME_STRINGS[$MODE]}")
-  # Repeat current mode if time is negative
+  # Get user input for next interval's time string
+  USER_INPUT=$(prompt_for_time "${LABELS[$MODE]}" ${TIME_STRINGS[$MODE]} | tr -d ' ')
+  if (($?)); then
+    return 1
+  elif [[ ${USER_INPUT,,} =~ q ]]; then
+    exit 1
+  elif [[ -n $USER_INPUT ]]; then
+    TIME_STRINGS[$MODE]=${USER_INPUT}
+  else
+    TIME_STRINGS[$MODE]=${DEFAULT_TIME_STRINGS[$MODE]}
+  fi
+  # Calculate seconds (and mode) for current interval
+  local secs=$(time2sec ${TIME_STRINGS[$MODE]})
   if [[ ${secs:-0} -lt 0 ]]; then
     MODE=$(( 1 - MODE ))
     secs=$(( secs * -1 ))
   fi
-  # Set seconds for next interval
-  SECS[$MODE]=${secs:-0}
+  # Wait & click/blink
+  wait_seconds "${secs}"
 }
 
-TIME_STRINGS=( ${1:-20} ${2:-3} )
-SECS=( $(time2sec ${TIME_STRINGS[0]} ) $(time2sec ${TIME_STRINGS[1]} ) )
+# Define defaults, which can be overriden by config file or args
+DEFAULT_WORK_MIN=${1:-20}
+DEFAULT_BREAK_MIN=${2:-.30}
+DO_BLINK=1
+DO_CLICK=1
+if [[ -f $HOME/.config/stretch-timer.conf ]]; then
+  . $HOME/.config/stretch-timer.conf
+fi
+
+# Organize data structures
+DEFAULT_TIME_STRINGS=( ${DEFAULT_WORK_MIN} ${DEFAULT_BREAK_MIN} )
+TIME_STRINGS=( ${DEFAULT_WORK_MIN} ${DEFAULT_BREAK_MIN} )
 LABELS=( WORK BREAK )
 SILENCE_DEFAULTS=( 1 0 )
 MODE=0 # 0=WORK; 1=BREAK
 THIS_DIR=`dirname "$BASH_SOURCE"`
 
+wait_seconds "${TIME_STRINGS[$MODE]}"
 while ((1)); do
   iteration
 done
