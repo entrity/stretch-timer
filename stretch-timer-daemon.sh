@@ -7,8 +7,9 @@ LOOP_PID=
 cd "$(dirname "$BASH_SOURCE")"
 
 # Detect OS
-if uname -a | grep -q Microsoft; then
-  . platorm-windows.sh
+if uname -a | grep -q -i 'Microsoft'; then
+  >&2 ls
+  . platform-windows.sh
 elif uname | grep -q Darwin; then
   . platform-mac.sh
 elif uname | grep -q Linux; then
