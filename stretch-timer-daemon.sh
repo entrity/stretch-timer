@@ -82,8 +82,8 @@ function iteration () {
 }
 
 # Define defaults, which can be overriden by config file or args
-DO_BLINK=1
-DO_CLICK=1
+DOBLINK=0
+DOCLICK=0
 if [[ -f $HOME/.config/stretch-timer.conf ]]; then
   . $HOME/.config/stretch-timer.conf
 fi
