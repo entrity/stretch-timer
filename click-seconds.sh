@@ -84,17 +84,17 @@ tput sc
 while ((1)); do
 	if expiration_reached; then break; fi
 	show_count
-	(($SILENT)) || make_click_sound
-	(($NOBLINK)) || invert_video
+	(($DOCLICK)) && make_click_sound
+	(($DOBLINK)) && invert_video
 	# Instead of sleep for 1 sec, spend 1 sec listening for keyboard input
 	read -s -N1 -t1 KBD_INPUT
 	# Allow user to hit 'Enter' to break the loop and start stretches
 	if [[ $KBD_INPUT == $'\x0a' ]]; then
 		cleanup && exit
 	elif [[ $KBD_INPUT == m ]]; then
-		SILENT=$(( 1 - ${SILENT:-0} ))
+		DOCLICK=$(( 1 - ${DOCLICK:-0} ))
 	elif [[ $KBD_INPUT == b ]]; then
-		NOBLINK=$(( 1 - ${NOBLINK:-0} ))
+		DOBLINK=$(( 1 - ${DOBLINK:-0} ))
 	fi
 done
 

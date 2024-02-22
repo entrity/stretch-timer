@@ -8,7 +8,6 @@ cd "$(dirname "$BASH_SOURCE")"
 
 # Detect OS
 if uname -a | grep -q -i 'Microsoft'; then
-  >&2 ls
   . platform-windows.sh
 elif uname | grep -q Darwin; then
   . platform-mac.sh
@@ -37,9 +36,11 @@ function time2sec () {
 function prompt_for_time () {
   local TITLE="Pomodoro $1"
   while true; do
-    >/dev/null sleep 30
-    # Loop without issuing reminder if the user is AFK
-    is_idle || >/dev/null remind "$TITLE" "60" "$1 TIME"
+    {
+      sleep 30
+      # Loop without issuing reminder if the user is AFK
+      is_idle || remind "$TITLE" "60" "$1 TIME"
+    } >/dev/null
   done &
   LOOP_PID=$!
   prompt "$TITLE" "Enter the $1 time (M:S or M)" "$2"
@@ -57,8 +58,8 @@ function wait_for_mode () {
     secs=$(( secs * -1 ))
   fi
   echo waiting seconds $secs
-  SILENT=$(( 1 - DO_CLICK )) \
-  NOBLINK=$(( 1 - DO_BLINK )) \
+  DOCLICK=${DOCLICK} \
+  DOBLINK=${DOBLINK} \
   "$THIS_DIR/click-seconds.sh" "${secs}"
 }
 
@@ -87,7 +88,7 @@ if [[ -f $HOME/.config/stretch-timer.conf ]]; then
   . $HOME/.config/stretch-timer.conf
 fi
 DEFAULT_WORK_MIN=${1:-20}
-DEFAULT_BREAK_MIN=${2:-.30}
+DEFAULT_BREAK_MIN=${2:-20} # old value was .30
 
 # Organize data structures
 DEFAULT_TIME_STRINGS=( ${DEFAULT_WORK_MIN} ${DEFAULT_BREAK_MIN} )
