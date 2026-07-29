@@ -223,6 +223,52 @@ test_failed_window_move_is_nonfatal () {
   unset -f xdotool
 }
 
+test_remind_with_sound () {
+  local focus_marker
+  local sound_marker
+  focus_marker=$(mktemp)
+  sound_marker=$(mktemp)
+  wmctrl () {
+    printf 'focused\n' >"$focus_marker"
+  }
+  ffplay () {
+    printf 'played\n' >"$sound_marker"
+  }
+
+  remind "Pomodoro WORK" "60" "WORK TIME" 1
+  assert_eq "focused" "$(<"$focus_marker")" \
+    "foregrounds the prompt when sound is enabled"
+  assert_eq "played" "$(<"$sound_marker")" \
+    "plays the reminder sound when enabled"
+
+  rm "$focus_marker" "$sound_marker"
+  unset -f wmctrl
+  unset -f ffplay
+}
+
+test_remind_without_sound () {
+  local focus_marker
+  local sound_marker
+  focus_marker=$(mktemp)
+  sound_marker=$(mktemp)
+  wmctrl () {
+    printf 'focused\n' >"$focus_marker"
+  }
+  ffplay () {
+    printf 'played\n' >"$sound_marker"
+  }
+
+  remind "Pomodoro WORK" "60" "WORK TIME" 0
+  assert_eq "focused" "$(<"$focus_marker")" \
+    "foregrounds the prompt when sound is disabled"
+  assert_eq "" "$(<"$sound_marker")" \
+    "does not play the reminder sound when disabled"
+
+  rm "$focus_marker" "$sound_marker"
+  unset -f wmctrl
+  unset -f ffplay
+}
+
 test_center_coordinates_at_origin
 test_center_coordinates_with_monitor_offset
 test_center_coordinates_round_down
@@ -234,6 +280,8 @@ test_prompt_does_not_leave_blocking_search_process
 test_missing_position_dependencies_are_nonfatal
 test_malformed_monitor_geometry_skips_window_search
 test_failed_window_move_is_nonfatal
+test_remind_with_sound
+test_remind_without_sound
 
 if ((FAILURES)); then
   exit 1

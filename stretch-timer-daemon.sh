@@ -18,11 +18,17 @@ else
   exit 1
 fi
 
+. reminder-schedule.sh
+
 trap cleanup SIGINT
 
 function cleanup () {
   >&2 echo "in CLEANUP ($LOOP_PID)"
-  [[ -n $LOOP_PID ]] && kill $LOOP_PID
+  if [[ -n $LOOP_PID ]]; then
+    kill "$LOOP_PID" 2>/dev/null || true
+    wait "$LOOP_PID" 2>/dev/null || true
+    LOOP_PID=
+  fi
   exit
 }
 
@@ -35,17 +41,12 @@ function time2sec () {
 
 function prompt_for_time () {
   local TITLE="Pomodoro $1"
-  while true; do
-    {
-      sleep 30
-      # Loop without issuing reminder if the user is AFK
-      is_idle || remind "$TITLE" "60" "$1 TIME"
-    } >/dev/null
-  done &
+  run_reminder_loop "$TITLE" "$1 TIME" >/dev/null &
   LOOP_PID=$!
   prompt "$TITLE" "Enter the $1 time (M:S or M)" "$2"
   local ret=$?
-  kill $LOOP_PID # After input returns
+  kill "$LOOP_PID" 2>/dev/null || true # After input returns
+  wait "$LOOP_PID" 2>/dev/null || true
   LOOP_PID=
   return $ret
 }

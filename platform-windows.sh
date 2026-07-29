@@ -12,8 +12,11 @@ prompt () {
 }
 
 remind () {
+	local play_sound=${4:-1}
 	>&2 echo remind...
-	powershell.exe -File "`wslpath -w windows-notification.ps1`" -title "$1" -ttl "$2" "$3"
+	if [[ $play_sound == 1 ]]; then
+		powershell.exe -File "`wslpath -w windows-notification.ps1`" -title "$1" -ttl "$2" "$3"
+	fi
 	__get_windows_pid | while read pid; do
 		__window_to_foreground "$pid"
 	done
