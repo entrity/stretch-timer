@@ -60,11 +60,64 @@ test_window_size () {
   unset -f xdotool
 }
 
+test_prompt_preserves_output_and_status () {
+  local center_marker
+  center_marker=$(mktemp)
+  zenity () {
+    printf '20:00\n'
+    return 7
+  }
+  _center_zenity_window () {
+    printf 'called\n' >"$center_marker"
+    return 0
+  }
+
+  local output
+  local status
+  output=$(prompt "Pomodoro WORK" "Enter time" "20")
+  status=$?
+
+  assert_eq "20:00" "$output" "preserves Zenity standard output"
+  assert_eq "7" "$status" "preserves Zenity exit status"
+  assert_eq "called" "$(<"$center_marker")" "runs the centering helper"
+  rm "$center_marker"
+  unset -f zenity
+  unset -f _center_zenity_window
+}
+
+test_centering_failure_does_not_change_prompt () {
+  local center_marker
+  center_marker=$(mktemp)
+  zenity () {
+    printf '30\n'
+    return 0
+  }
+  _center_zenity_window () {
+    printf 'called\n' >"$center_marker"
+    return 1
+  }
+
+  local output
+  local status
+  output=$(prompt "Pomodoro BREAK" "Enter time" "20")
+  status=$?
+
+  assert_eq "30" "$output" "keeps output when centering fails"
+  assert_eq "0" "$status" "keeps status when centering fails"
+  assert_eq "called" "$(<"$center_marker")" \
+    "attempts centering without making it fatal"
+  rm "$center_marker"
+  unset -f zenity
+  unset -f _center_zenity_window
+}
+
 test_center_coordinates_at_origin
 test_center_coordinates_with_monitor_offset
 test_center_coordinates_round_down
 test_primary_monitor_geometry
 test_window_size
+test_prompt_preserves_output_and_status
+test_centering_failure_does_not_change_prompt
 
 if ((FAILURES)); then
   exit 1
