@@ -168,20 +168,35 @@ _get_window_size () {
 _center_zenity_window () {
   local zenity_pid=$1
   local monitor_geometry
-  local window_id
+  local window_id=
   local window_size
   local coordinates
+  local monitor_x monitor_y monitor_width monitor_height
+  local window_width window_height
+  local coordinate_x coordinate_y
+  local attempts=0
 
   command -v xrandr >/dev/null || return 0
   command -v xdotool >/dev/null || return 0
   monitor_geometry=$(_get_primary_monitor_geometry) || return 0
-  window_id=$(xdotool search --sync --onlyvisible --pid "$zenity_pid" \
-    2>/dev/null | head -n 1) || return 0
+  while kill -0 "$zenity_pid" 2>/dev/null && ((attempts < 200)); do
+    window_id=$(xdotool search --onlyvisible --pid "$zenity_pid" \
+      2>/dev/null | head -n 1) || window_id=
+    [[ $window_id =~ ^[0-9]+$ ]] && break
+    attempts=$((attempts + 1))
+    sleep 0.05
+  done
   [[ $window_id =~ ^[0-9]+$ ]] || return 0
   window_size=$(_get_window_size "$window_id") || return 0
-  coordinates=$(_center_coordinates $monitor_geometry $window_size) ||
-    return 0
-  xdotool windowmove "$window_id" $coordinates >/dev/null 2>&1 || true
+  read -r monitor_x monitor_y monitor_width monitor_height \
+    <<<"$monitor_geometry" || return 0
+  read -r window_width window_height <<<"$window_size" || return 0
+  coordinates=$(_center_coordinates \
+    "$monitor_x" "$monitor_y" "$monitor_width" "$monitor_height" \
+    "$window_width" "$window_height") || return 0
+  read -r coordinate_x coordinate_y <<<"$coordinates" || return 0
+  xdotool windowmove "$window_id" "$coordinate_x" "$coordinate_y" \
+    >/dev/null 2>&1 || true
 }
 ```
 
@@ -285,7 +300,6 @@ prompt () {
 
   wait "$zenity_pid"
   zenity_status=$?
-  kill "$centering_pid" 2>/dev/null || true
   wait "$centering_pid" 2>/dev/null || true
   return "$zenity_status"
 }
