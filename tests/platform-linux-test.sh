@@ -114,12 +114,18 @@ test_centering_failure_does_not_change_prompt () {
 }
 
 test_prompt_does_not_leave_blocking_search_process () {
+  local search_marker
   local child_marker
   local child_pid
+  search_marker=$(mktemp)
   child_marker=$(mktemp)
   zenity () {
-    sleep 0.1
-    return 0
+    local attempt
+    for attempt in {1..100}; do
+      [[ -s $search_marker ]] && return 0
+      sleep 0.01
+    done
+    return 1
   }
   xrandr () {
     printf '%s\n' \
@@ -127,11 +133,13 @@ test_prompt_does_not_leave_blocking_search_process () {
       " 0: +*eDP-1 1920/344x1200/215+0+0 eDP-1"
   }
   xdotool () {
-    if [[ $1 == search && " $* " == *" --sync "* ]]; then
-      sleep 30 &
-      printf '%s\n' "$!" >"$child_marker"
-      wait "$!"
-    elif [[ $1 == search ]]; then
+    if [[ $1 == search ]]; then
+      printf 'attempted\n' >"$search_marker"
+      if [[ " $* " == *" --sync "* ]]; then
+        sleep 30 &
+        printf '%s\n' "$!" >"$child_marker"
+        wait "$!"
+      fi
       return 1
     fi
   }
@@ -144,7 +152,7 @@ test_prompt_does_not_leave_blocking_search_process () {
     kill "$child_pid" 2>/dev/null || true
   fi
 
-  rm "$child_marker"
+  rm "$search_marker" "$child_marker"
   unset -f zenity
   unset -f xrandr
   unset -f xdotool
