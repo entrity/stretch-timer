@@ -1,0 +1,4 @@
+#!/bin/bash
+
+printf '%s\n' "$$" >"$SLEEP_PID_FILE"
+exec /bin/sleep 30

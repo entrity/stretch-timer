@@ -101,7 +101,10 @@ prompt () {
 
 remind () {
   wmctrl -a "$1"
-  ffplay -nodisp -autoexit -volume 20 /usr/share/sounds/sound-icons/prompt.wav 2>/dev/null
+  if [[ ${4:-1} == 1 ]]; then
+    ffplay -nodisp -autoexit -volume 20 \
+      /usr/share/sounds/sound-icons/prompt.wav 2>/dev/null
+  fi
 }
 
 echo "Sourced Linux platform utils"
